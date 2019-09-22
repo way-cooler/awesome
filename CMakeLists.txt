@@ -90,9 +90,13 @@ set(AWE_SRCS
     ${BUILD_DIR}/objects/tag.c
     ${BUILD_DIR}/objects/selection_getter.c
     ${BUILD_DIR}/objects/window.c
+    ${BUILD_DIR}/wayland/drawin.c
+    ${BUILD_DIR}/wayland/drawable.c
     ${BUILD_DIR}/wayland/mousegrabber.c
     ${BUILD_DIR}/wayland/globals.c
     ${BUILD_DIR}/wayland/root.c
+    ${BUILD_DIR}/x11/drawin.c
+    ${BUILD_DIR}/x11/drawable.c
     ${BUILD_DIR}/x11/mousegrabber.c
     ${BUILD_DIR}/x11/globals.c
     ${BUILD_DIR}/x11/root.c
