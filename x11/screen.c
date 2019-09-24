@@ -38,7 +38,7 @@ ARRAY_FUNCS(screen_output_t, screen_output, screen_output_wipe);
 static void screen_scan_x11(lua_State *L, screen_array_t *screens)
 {
     xcb_screen_t *xcb_screen = globalconf.screen;
-    screen_t *s = screen_add(L, screens);
+    screen_t *s = screen_add(L, screens, NULL);
     s->geometry.x = 0;
     s->geometry.y = 0;
     s->geometry.width = xcb_screen->width_in_pixels;
@@ -72,7 +72,7 @@ screen_scan_randr_monitors(lua_State *L, screen_array_t *screens)
         if(!xcb_randr_monitor_info_outputs_length(monitor_iter.data))
             continue;
 
-        new_screen = screen_add(L, screens);
+        new_screen = screen_add(L, screens, NULL);
         new_screen->geometry.x = monitor_iter.data->x;
         new_screen->geometry.y = monitor_iter.data->y;
         new_screen->geometry.width = monitor_iter.data->width;
@@ -148,7 +148,7 @@ screen_scan_randr_crtcs(lua_State *L, screen_array_t *screens)
             continue;
 
         /* Prepare the new screen */
-        screen_t *new_screen = screen_add(L, screens);
+        screen_t *new_screen = screen_add(L, screens, NULL);
         new_screen->geometry.x = crtc_info_r->x;
         new_screen->geometry.y = crtc_info_r->y;
         new_screen->geometry.width= crtc_info_r->width;
@@ -298,7 +298,7 @@ screen_scan_xinerama(lua_State *L, screen_array_t *screens)
 
     for(int screen = 0; screen < xinerama_screen_number; screen++)
     {
-        screen_t *s = screen_add(L, screens);
+        screen_t *s = screen_add(L, screens, NULL);
         s->geometry.x = xsi[screen].x_org;
         s->geometry.y = xsi[screen].y_org;
         s->geometry.width = xsi[screen].width;
@@ -308,7 +308,7 @@ screen_scan_xinerama(lua_State *L, screen_array_t *screens)
     p_delete(&xsq);
 }
 
-void x11_new_screen(screen_t *screen)
+void x11_new_screen(screen_t *screen, void *data)
 {
     screen->impl_data = calloc(1, sizeof(struct x11_screen));
     struct x11_screen *x11_screen = screen->impl_data;
