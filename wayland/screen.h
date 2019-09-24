@@ -24,15 +24,20 @@
 #include "common/luaclass.h"
 #include "objects/screen.h"
 
+#include "xdg-output-unstable-v1.h"
 #include <wayland-client.h>
 
 struct wayland_screen
 {
     screen_t *screen;
-    /** XXX If NULL, then this is a "fake" screen. */
+    /** XXX If these are NULL, then this is a "fake" screen. */
     struct wl_output *wl_output;
+    struct zxdg_output_v1 *xdg_output;
+
     int32_t mm_height, mm_width;
 };
+
+extern struct zxdg_output_v1_listener xdg_output_listener;
 
 void wayland_new_screen(screen_t *screen, void *data);
 void wayland_wipe_screen(screen_t *screen);

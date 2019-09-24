@@ -177,6 +177,28 @@ static void awesome_handle_global(void *data, struct wl_registry *registry,
         globalconf.layer_shell = wl_registry_bind(registry, name,
                 &zwlr_layer_shell_v1_interface, version);
     }
+    else if (strcmp(interface, zxdg_output_manager_v1_interface.name) == 0)
+    {
+        globalconf.xdg_output_manager = wl_registry_bind(registry, name,
+                &zxdg_output_manager_v1_interface, version);
+        warn("ADDED XDG OUTPUT MANAGER");
+        foreach (screen, globalconf.screens)
+        {
+            struct wayland_screen *wayland_screen = (*screen)->impl_data;
+            warn("Screen: %p", wayland_screen->wl_output );
+            if (wayland_screen->wl_output != NULL)
+            {
+                warn("ADDING XDG OUTPUT IN GLOBALS");
+                wayland_screen->xdg_output =
+                    zxdg_output_manager_v1_get_xdg_output(globalconf.xdg_output_manager,
+                            wayland_screen->wl_output);
+                // TODO Clean up on destroy
+                zxdg_output_v1_add_listener(wayland_screen->xdg_output,
+                        &xdg_output_listener, wayland_screen);
+                wl_display_roundtrip(globalconf.wl_display);
+            }
+        }
+    }
 }
 
 void init_wayland(void)

@@ -22,7 +22,53 @@
 
 #include <stdint.h>
 
-static void on_geometry(void *data, struct wl_output *wl_output,
+#include "xdg-output-unstable-v1.h"
+
+static void xdg_output_on_logical_position(void *data,
+        struct zxdg_output_v1 *zxdg_output_v1, int32_t x, int32_t y)
+{
+    struct wayland_screen *wayland_screen = data;
+
+    warn("GOT COORDS (%d, %d)", x, y);
+    screen_t *screen = wayland_screen->screen;
+    screen->geometry.x = x;
+    screen->geometry.y = y;
+}
+
+static void xdg_output_on_logical_size(void *data,
+        struct zxdg_output_v1 *zxdg_output_v1, int32_t width, int32_t height)
+{
+    // TODO
+}
+
+static void xdg_output_on_done(void *data,
+        struct zxdg_output_v1 *zxdg_output_v1)
+{
+    // TODO
+}
+
+static void xdg_output_on_name(void *data,
+        struct zxdg_output_v1 *zxdg_output_v1, const char *name)
+{
+    // TODO
+}
+
+static void xdg_output_on_description(void *data,
+        struct zxdg_output_v1 *zxdg_output_v1, const char *description)
+{
+    // TODO
+}
+
+struct zxdg_output_v1_listener xdg_output_listener =
+{
+    .logical_position = xdg_output_on_logical_position,
+    .logical_size = xdg_output_on_logical_size,
+    .done = xdg_output_on_done,
+    .name = xdg_output_on_name,
+    .description = xdg_output_on_description,
+};
+
+static void wl_output_on_geometry(void *data, struct wl_output *wl_output,
         int32_t x, int32_t y, int32_t physical_width, int32_t physical_height,
         int32_t subpixel, const char *make, const char *model,
         int32_t transform)
@@ -30,13 +76,9 @@ static void on_geometry(void *data, struct wl_output *wl_output,
     struct wayland_screen *wayland_screen = data;
     wayland_screen->mm_width = physical_width;
     wayland_screen->mm_height = physical_height;
-
-    screen_t *screen = wayland_screen->screen;
-    screen->geometry.x = x;
-    screen->geometry.y = y;
 }
 
-static void on_mode(void *data, struct wl_output *wl_output,
+static void wl_output_on_mode(void *data, struct wl_output *wl_output,
         uint32_t flags, int32_t width, int32_t height, int32_t refresh)
 {
     struct wayland_screen *wayland_screen = data;
@@ -46,24 +88,39 @@ static void on_mode(void *data, struct wl_output *wl_output,
 }
 
 // This is for atomic updates, this is not the object being destroyed.
-static void on_done(void *data, struct wl_output *wl_output)
+static void wl_output_on_done(void *data, struct wl_output *wl_output)
 {
     struct wayland_screen *wayland_screen = data;
+    warn("DONE %p %p", wayland_screen->wl_output, globalconf.xdg_output_manager );
     lua_State *L = globalconf_get_lua_State();
     screen_added(L, wayland_screen->screen);
+
+    if (wayland_screen->wl_output != NULL
+            && globalconf.xdg_output_manager != NULL
+            && wayland_screen->xdg_output == NULL)
+    {
+        warn("ADDING XDG OUTPUT IN wayland");
+        wayland_screen->xdg_output =
+            zxdg_output_manager_v1_get_xdg_output(globalconf.xdg_output_manager,
+                    wayland_screen->wl_output);
+        // TODO Clean up on destroy
+        zxdg_output_v1_add_listener(wayland_screen->xdg_output,
+                &xdg_output_listener, wayland_screen);
+        wl_display_roundtrip(globalconf.wl_display);
+    }
 }
 
-static void on_scale(void *data, struct wl_output *wl_output, int32_t factor)
+static void wl_output_on_scale(void *data, struct wl_output *wl_output, int32_t factor)
 {
     /* Do nothing */
 }
 
 static struct wl_output_listener wl_output_listener =
 {
-    .geometry = on_geometry,
-    .mode = on_mode,
-    .done = on_done,
-    .scale = on_scale,
+    .geometry = wl_output_on_geometry,
+    .mode = wl_output_on_mode,
+    .done = wl_output_on_done,
+    .scale = wl_output_on_scale,
 };
 
 void wayland_new_screen(screen_t *screen, void *data)
