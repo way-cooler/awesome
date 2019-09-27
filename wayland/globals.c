@@ -181,14 +181,13 @@ static void awesome_handle_global(void *data, struct wl_registry *registry,
     {
         globalconf.xdg_output_manager = wl_registry_bind(registry, name,
                 &zxdg_output_manager_v1_interface, version);
-        warn("ADDED XDG OUTPUT MANAGER");
+        // For all the screens that have already been added, add XDG output info.
         foreach (screen, globalconf.screens)
         {
             struct wayland_screen *wayland_screen = (*screen)->impl_data;
-            warn("Screen: %p", wayland_screen->wl_output );
-            if (wayland_screen->wl_output != NULL)
+            if (wayland_screen->wl_output != NULL
+                    && wayland_screen->xdg_output == NULL)
             {
-                warn("ADDING XDG OUTPUT IN GLOBALS");
                 wayland_screen->xdg_output =
                     zxdg_output_manager_v1_get_xdg_output(globalconf.xdg_output_manager,
                             wayland_screen->wl_output);

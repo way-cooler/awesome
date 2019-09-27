@@ -27,37 +27,38 @@
 static void xdg_output_on_logical_position(void *data,
         struct zxdg_output_v1 *zxdg_output_v1, int32_t x, int32_t y)
 {
-    struct wayland_screen *wayland_screen = data;
-
-    warn("GOT COORDS (%d, %d)", x, y);
-    screen_t *screen = wayland_screen->screen;
-    screen->geometry.x = x;
-    screen->geometry.y = y;
+    screen_t *screen = data;
+    struct wayland_viewport *viewport = screen->viewport;
+    viewport->x = x;
+    viewport->y = y;
 }
 
 static void xdg_output_on_logical_size(void *data,
         struct zxdg_output_v1 *zxdg_output_v1, int32_t width, int32_t height)
-{
-    // TODO
-}
+{}
 
 static void xdg_output_on_done(void *data,
         struct zxdg_output_v1 *zxdg_output_v1)
 {
-    // TODO
+    screen_t *screen = data;
+    lua_State *L = globalconf_get_lua_State();
+    // TODO de duplicate the viewport now that we have all the info.
+    // if no duplicate, add to the global linked list of viewports
+    screen_added(L, screen);
 }
 
 static void xdg_output_on_name(void *data,
         struct zxdg_output_v1 *zxdg_output_v1, const char *name)
 {
-    // TODO
+    screen_t *screen = data;
+    struct wayland_viewport *viewport = screen->viewport;
+    struct wayland_screen_output *output = &viewport->outputs.tab[0];
+    output->name = strdup(name);
 }
 
 static void xdg_output_on_description(void *data,
         struct zxdg_output_v1 *zxdg_output_v1, const char *description)
-{
-    // TODO
-}
+{}
 
 struct zxdg_output_v1_listener xdg_output_listener =
 {
@@ -73,47 +74,47 @@ static void wl_output_on_geometry(void *data, struct wl_output *wl_output,
         int32_t subpixel, const char *make, const char *model,
         int32_t transform)
 {
-    struct wayland_screen *wayland_screen = data;
-    wayland_screen->mm_width = physical_width;
-    wayland_screen->mm_height = physical_height;
+    screen_t *screen = data;
+    struct wayland_viewport *viewport = screen->viewport;
+    struct wayland_screen_output *output = &viewport->outputs.tab[0];
+    output->mm_width = physical_width;
+    output->mm_height = physical_height;
 }
 
 static void wl_output_on_mode(void *data, struct wl_output *wl_output,
         uint32_t flags, int32_t width, int32_t height, int32_t refresh)
 {
-    struct wayland_screen *wayland_screen = data;
-    screen_t *screen = wayland_screen->screen;
-    screen->geometry.width = width;
-    screen->geometry.height = height;
+    screen_t *screen = data;
+    struct wayland_viewport *viewport = screen->viewport;
+    viewport->width = screen->geometry.width = width;
+    viewport->height = screen->geometry.height = height;
 }
 
 // This is for atomic updates, this is not the object being destroyed.
 static void wl_output_on_done(void *data, struct wl_output *wl_output)
 {
-    struct wayland_screen *wayland_screen = data;
-    warn("DONE %p %p", wayland_screen->wl_output, globalconf.xdg_output_manager );
-    lua_State *L = globalconf_get_lua_State();
-    screen_added(L, wayland_screen->screen);
+    screen_t *screen = data;
+    struct wayland_screen *wayland_screen = screen->impl_data;
 
     if (wayland_screen->wl_output != NULL
             && globalconf.xdg_output_manager != NULL
             && wayland_screen->xdg_output == NULL)
     {
-        warn("ADDING XDG OUTPUT IN wayland");
+        /* Get the XDG information if the manager is available. Otherwise happen
+           once the manager is added
+         */
         wayland_screen->xdg_output =
             zxdg_output_manager_v1_get_xdg_output(globalconf.xdg_output_manager,
                     wayland_screen->wl_output);
         // TODO Clean up on destroy
         zxdg_output_v1_add_listener(wayland_screen->xdg_output,
-                &xdg_output_listener, wayland_screen);
+                &xdg_output_listener, screen);
         wl_display_roundtrip(globalconf.wl_display);
     }
 }
 
 static void wl_output_on_scale(void *data, struct wl_output *wl_output, int32_t factor)
-{
-    /* Do nothing */
-}
+{}
 
 static struct wl_output_listener wl_output_listener =
 {
@@ -125,14 +126,22 @@ static struct wl_output_listener wl_output_listener =
 
 void wayland_new_screen(screen_t *screen, void *data)
 {
-    screen->impl_data = calloc(1, sizeof(struct wayland_screen));
+    assert(data);
+    struct wl_output *wl_output = data;
 
+    screen->impl_data = calloc(1, sizeof(struct wayland_screen));
     struct wayland_screen *wayland_screen = screen->impl_data;
     wayland_screen->screen = screen;
-    wayland_screen->wl_output = data;
+    wayland_screen->wl_output = wl_output;
 
-    wl_output_add_listener(wayland_screen->wl_output,
-            &wl_output_listener, wayland_screen);
+    // De-dup later, once we have all the positioning information from XDG.
+    struct wayland_viewport *viewport = calloc(1, sizeof(struct wayland_viewport));
+    screen->viewport = viewport;
+    wayland_screen_output_array_init(&viewport->outputs);
+    struct wayland_screen_output output = {0};
+    wayland_screen_output_array_append(&viewport->outputs, output);
+
+    wl_output_add_listener(wl_output, &wl_output_listener, screen);
     wl_display_roundtrip(globalconf.wl_display);
 }
 
@@ -180,21 +189,19 @@ int wayland_get_viewports(lua_State *L)
 
 int wayland_get_outputs(lua_State *L, screen_t *s)
 {
-    struct wayland_screen *wayland_screen = s->impl_data;
-    lua_createtable(L, 0, 1/*wayland_screen->outputs.len*/);
-    /* TODO
-    foreach(output, x11_screen->outputs)
-    { */
+    struct wayland_viewport *viewport = s->viewport;
+    lua_createtable(L, 0, viewport->outputs.len);
+    foreach(output, viewport->outputs)
+    {
         lua_createtable(L, 2, 0);
 
-        lua_pushinteger(L, wayland_screen->mm_width);
+        lua_pushinteger(L, output->mm_width);
         lua_setfield(L, -2, "mm_width");
-        lua_pushinteger(L, wayland_screen->mm_height);
+        lua_pushinteger(L, output->mm_height);
         lua_setfield(L, -2, "mm_height");
 
-        // TODO Real name
-        lua_setfield(L, -2, "wayland screen, FIXME");
-  // }
+        lua_setfield(L, -2, output->name);
+    }
     /* The table of tables we created. */
     return 1;
 }
