@@ -24,6 +24,64 @@
 
 #include "xdg-output-unstable-v1.h"
 
+static struct wayland_viewport *first_screen_viewport = NULL;
+static struct wayland_viewport *last_screen_viewport = NULL;
+
+static struct wayland_viewport
+*viewport_dedupe(struct wayland_viewport *new_viewport)
+{
+    for (struct wayland_viewport *viewport = first_screen_viewport;
+         viewport != NULL;
+         viewport = viewport->next)
+    {
+        if (viewport->x == new_viewport->x
+                && viewport-> y == new_viewport->y
+                && viewport->width == new_viewport->width
+                && viewport->height == new_viewport->height)
+        {
+            foreach(output, new_viewport->outputs)
+            {
+                wayland_screen_output_array_append(&viewport->outputs, *output);
+            }
+            free(new_viewport);
+            return viewport;
+        }
+    }
+    if (first_screen_viewport == NULL)
+    {
+        first_screen_viewport = new_viewport;
+        last_screen_viewport = new_viewport;
+    }
+    else
+    {
+        last_screen_viewport->next = new_viewport;
+        last_screen_viewport = new_viewport;
+    }
+    assert(first_screen_viewport && last_screen_viewport);
+    return new_viewport;
+}
+
+static void viewport_clean(void)
+{
+    foreach(screen, globalconf.screens)
+    {
+        (*screen)->viewport = NULL;
+    }
+    for (struct wayland_viewport *viewport = first_screen_viewport;
+         viewport != NULL;
+         viewport = viewport->next)
+    {
+        foreach(output, viewport->outputs)
+        {
+            free(output->name);
+            output->name = NULL;
+        }
+        wayland_screen_output_array_wipe(&viewport->outputs);
+        free(viewport);
+    }
+    first_screen_viewport = last_screen_viewport = NULL;
+}
+
 static void xdg_output_on_logical_position(void *data,
         struct zxdg_output_v1 *zxdg_output_v1, int32_t x, int32_t y)
 {
@@ -42,8 +100,7 @@ static void xdg_output_on_done(void *data,
 {
     screen_t *screen = data;
     lua_State *L = globalconf_get_lua_State();
-    // TODO de duplicate the viewport now that we have all the info.
-    // if no duplicate, add to the global linked list of viewports
+    viewport_dedupe(screen->viewport);
     screen_added(L, screen);
 }
 
@@ -153,7 +210,7 @@ void wayland_wipe_screen(screen_t *screen)
 
 void wayland_cleanup_screens(void)
 {
-    // TODO
+    viewport_clean();
 }
 
 void wayland_mark_fake_screen(screen_t *screen)
@@ -165,17 +222,21 @@ void wayland_mark_fake_screen(screen_t *screen)
 void wayland_scan_screens(void)
 {
     wl_display_roundtrip(globalconf.wl_display);
-    // NOTE This is the first time we are getting the Wayland globals,
-    // so we have to check this here.
+    /*
+      NOTE This is the first time we are getting the Wayland globals,
+      so we have to check this here.
+
+      XXX We fetch the globals so late because when outputs are advertised they
+      immediately try to make a screen but if we do it too early then Lua isn't
+      initialized and we get segfaults.
+    */
     assert(globalconf.wl_compositor && globalconf.wl_shm && globalconf.wl_seat);
     if (globalconf.wl_mousegrabber == NULL)
         fatal("Expected compositor to advertise Way Cooler mousegrabber protocol");
 }
 
 void wayland_get_screens(lua_State *L, screen_array_t *screens)
-{
-    fatal("TODO");
-}
+{}
 
 int wayland_viewport_get_outputs(lua_State *L, void *viewport)
 {
