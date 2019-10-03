@@ -62,6 +62,7 @@ void init_x11(void)
         .drawin_get_opacity = x11_drawin_get_opacity,
         .drawin_set_cursor = x11_drawin_set_cursor,
         .drawin_systray_kickout = x11_drawin_systray_kickout,
+        .drawin_set_ontop = x11_drawin_set_ontop,
         .drawin_get_shape_bounding = x11_drawin_get_shape_bounding,
         .drawin_get_shape_clip = x11_drawin_get_shape_clip,
         .drawin_get_shape_input = x11_drawin_get_shape_input,

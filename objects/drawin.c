@@ -501,7 +501,7 @@ luaA_drawin_set_ontop(lua_State *L, drawin_t *drawin)
     if(b != drawin->ontop)
     {
         drawin->ontop = b;
-        stack_windows();
+        drawin_impl.drawin_set_ontop(drawin, b);
         luaA_object_emit_signal(L, -3, "property::ontop", 0);
     }
     return 0;

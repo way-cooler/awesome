@@ -45,6 +45,8 @@ struct drawin_impl
     void (*drawin_set_cursor)(struct drawin_t *drawin, const char *cursor);
     void (*drawin_systray_kickout)(struct drawin_t *drawin);
 
+    void (*drawin_set_ontop)(struct drawin_t *drawin, bool ontop);
+
     cairo_surface_t *(*drawin_get_shape_bounding)(struct drawin_t *drawin);
     cairo_surface_t *(*drawin_get_shape_clip)(struct drawin_t *drawin);
     cairo_surface_t *(*drawin_get_shape_input)(struct drawin_t *drawin);

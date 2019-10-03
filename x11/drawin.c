@@ -204,6 +204,11 @@ void x11_drawin_systray_kickout(struct drawin_t *drawin)
     }
 }
 
+void x11_drawin_set_ontop(struct drawin_t *drawin, bool ontop)
+{
+    stack_windows();
+}
+
 void x11_drawin_set_shape_bounding(struct drawin_t *drawin,
         cairo_surface_t *surface)
 {

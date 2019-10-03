@@ -44,6 +44,7 @@ void x11_drawin_unmap(struct drawin_t *drawin);
 double x11_drawin_get_opacity(struct drawin_t *drawin);
 void x11_drawin_set_cursor(struct drawin_t *drawin, const char *cursor);
 void x11_drawin_systray_kickout(struct drawin_t *drawin);
+void x11_drawin_set_ontop(struct drawin_t *drawin, bool ontop);
 
 void x11_drawin_set_shape_bounding(struct drawin_t *drawin,
         cairo_surface_t *surface);
