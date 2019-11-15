@@ -241,6 +241,7 @@ void init_wayland(void)
         .drawin_get_opacity = wayland_drawin_get_opacity,
         .drawin_set_cursor = wayland_drawin_set_cursor,
         .drawin_systray_kickout = wayland_drawin_systray_kickout,
+        .drawin_set_ontop = wayland_drawin_set_ontop,
         .drawin_get_shape_bounding = wayland_drawin_get_shape_bounding,
         .drawin_get_shape_clip = wayland_drawin_get_shape_clip,
         .drawin_get_shape_input = wayland_drawin_get_shape_input,

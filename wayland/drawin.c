@@ -228,6 +228,18 @@ void wayland_drawin_systray_kickout(struct drawin_t *drawin)
     // TODO
 }
 
+void wayland_drawin_set_ontop(struct drawin_t *drawin, bool ontop)
+{
+    struct wayland_drawin *wayland_drawin = drawin->impl_data;
+    struct wayland_drawable *wayland_drawable = drawin->drawable->impl_data;
+    enum zwlr_layer_shell_v1_layer layer = ontop
+            ? ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY
+            : ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+    zwlr_layer_surface_v1_set_layer(wayland_drawin->layer_surface, layer);
+    wl_surface_commit(wayland_drawable->wl_surface);
+    wl_display_roundtrip(globalconf.wl_display);
+}
+
 void wayland_drawin_set_shape_bounding(struct drawin_t *drawin,
         cairo_surface_t *surface)
 {
