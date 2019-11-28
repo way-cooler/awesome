@@ -88,7 +88,7 @@ void wayland_drawin_allocate(struct drawin_t *drawin)
     wayland_drawin->layer_surface =
         zwlr_layer_shell_v1_get_layer_surface(layer_shell,
                 wayland_drawable->wl_surface, NULL,
-                ZWLR_LAYER_SHELL_V1_LAYER_TOP, "awesome");
+                ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "awesome");
     zwlr_layer_surface_v1_set_size(wayland_drawin->layer_surface,
             drawin->geometry.width, drawin->geometry.height);
 	zwlr_layer_surface_v1_set_keyboard_interactivity(
@@ -233,8 +233,8 @@ void wayland_drawin_set_ontop(struct drawin_t *drawin, bool ontop)
     struct wayland_drawin *wayland_drawin = drawin->impl_data;
     struct wayland_drawable *wayland_drawable = drawin->drawable->impl_data;
     enum zwlr_layer_shell_v1_layer layer = ontop
-            ? ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY
-            : ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+            ? ZWLR_LAYER_SHELL_V1_LAYER_TOP
+            : ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
     zwlr_layer_surface_v1_set_layer(wayland_drawin->layer_surface, layer);
     wl_surface_commit(wayland_drawable->wl_surface);
     wl_display_roundtrip(globalconf.wl_display);
