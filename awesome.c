@@ -102,6 +102,12 @@ init_rng(void)
     srandom(g_random_int());
 }
 
+bool
+using_wayland(void)
+{
+    return getenv("WAYLAND_DISPLAY") != NULL || getenv("WAYLAND_SOCKET") != NULL;
+}
+
 /** Call before exiting.
  */
 void
@@ -828,7 +834,7 @@ main(int argc, char **argv)
     /* Grab server */
     xcb_grab_server(globalconf.connection);
 
-    if (getenv("WAYLAND_DISPLAY") != NULL || getenv("WAYLAND_SOCKET") != NULL)
+    if (using_wayland())
     {
         init_wayland();
     }
@@ -964,7 +970,10 @@ main(int argc, char **argv)
     client_emit_scanning();
 
     /* scan existing windows */
-    scan(tree_c);
+    if (!using_wayland())
+    {
+        scan(tree_c);
+    }
 
     client_emit_scanned();
 

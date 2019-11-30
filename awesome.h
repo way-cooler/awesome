@@ -29,6 +29,7 @@
 #include "globalconf.h"
 
 int awesome_refresh(void);
+bool using_wayland(void);
 void awesome_restart(void);
 void awesome_atexit(bool restart);
 
