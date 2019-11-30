@@ -127,6 +127,7 @@ add_executable(${PROJECT_AWE_NAME}
 
 # CFLAGS
 set(AWESOME_C_FLAGS
+    -g
     -O1 -std=gnu99 -ggdb3 -fno-strict-aliasing -Wall -Wextra
     -Wchar-subscripts -Wundef -Wshadow -Wcast-align -Wwrite-strings
     -Wsign-compare -Wunused -Wno-unused-parameter -Wuninitialized -Winit-self

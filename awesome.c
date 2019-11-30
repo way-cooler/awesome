@@ -747,11 +747,11 @@ main(int argc, char **argv)
     }
 
     /* register function for signals */
-    g_unix_signal_add(SIGINT, exit_on_signal, NULL);
-    g_unix_signal_add(SIGTERM, exit_on_signal, NULL);
-    g_unix_signal_add(SIGHUP, restart_on_signal, NULL);
+    //g_unix_signal_add(SIGINT, exit_on_signal, NULL);
+    //g_unix_signal_add(SIGTERM, exit_on_signal, NULL);
+    //g_unix_signal_add(SIGHUP, restart_on_signal, NULL);
 
-    struct sigaction sa = { .sa_handler = signal_fatal, .sa_flags = SA_RESETHAND };
+    /*struct sigaction sa = { .sa_handler = signal_fatal,  .sa_flags = SA_RESETHAND };
     sigemptyset(&sa.sa_mask);
     sigaction(SIGABRT, &sa, 0);
     sigaction(SIGBUS, &sa, 0);
@@ -763,6 +763,7 @@ main(int argc, char **argv)
     sa.sa_handler = signal_child;
     sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
     sigaction(SIGCHLD, &sa, 0);
+    */
 
     /* We have no clue where the input focus is right now */
     globalconf.focus.need_update = true;
